@@ -34,22 +34,7 @@ After simulation, the next step was to control the actual robot. This required i
 - This solution proved most stable and effective for predefined and repeated tasks.
 
 > 🔗 **TCP/IP Control Code adapted from:**  
-> [`LeRobot/pyABB`](https://github.com/LeRobot/pyABB) – A Python interface for ABB robots over sockets.
-
----
-
-## 🧠 What I Learned
-
-- Hands-on experience with ABB industrial robot systems.
-- Deepened understanding of ROS 2 and robotic communication protocols.
-- Troubleshooting and debugging real-time control interfaces (EGM, RWS, TCP).
-- Integration of software and hardware for an automated, real-world task.
-
----
-
-## 📹 Coming Soon
-
-🎥 A video demonstration of the working robotic system in action will be uploaded in the next few days.
+> [`robotics/open_abb`]([https://github.com/milistu/open_abb]) – A Python interface for ABB robots over sockets.
 
 ---
 
