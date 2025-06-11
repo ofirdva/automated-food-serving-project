@@ -12,12 +12,12 @@ The first stage of the project involved controlling the ABB IRB 1200 in a simula
 ### INSTRUCTIONS
 
 For running RViz, make the work area ready as abb_ros2:
-'sudo apt update
-sudo apt dist-upgrade
-rosdep update
-cd src
-vcs import < abb_ros2/abb.repos
-rosdep install -r --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y'
+'sudo apt update'
+'sudo apt dist-upgrade'
+'rosdep update'
+'cd src'
+'vcs import < abb_ros2/abb.repos'
+'rosdep install -r --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y'
 
 ---
 
