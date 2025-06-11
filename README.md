@@ -7,10 +7,8 @@ This project focuses on developing and deploying an automated robotic food-servi
 ## 🔧 Phase 1: RViz Simulation with ROS 2
 
 The first stage of the project involved controlling the ABB IRB 1200 in a simulated environment using **RViz** and **ROS 2**. Key features:
-
-- Implemented joystick-based motion control in RViz.
+- Used [PickNik’s `abb_ros2` package](https://github.com/PickNikRobotics/abb_ros2) to implement joystick-based motion control in RViz .
 - Used inverse kinematics to validate robot behavior.
-- Built a ROS 2 launch system to visualize robot state and plan movements interactively.
 
 ---
 
@@ -26,7 +24,7 @@ After simulation, the next step was to control the actual robot. This required i
 ### ❌ Externally Guided Motion (EGM)
 - Attempted to implement real-time joint control using UDP-based EGM.
 - Tried both through ROS 2 and directly via standalone Python.
-- Encountered persistent execution errors (e.g., **40223**). EGM was ultimately not viable for this setup.
+- Encountered persistent execution errors (e.g., **40223** on irc5). EGM was ultimately not viable for this setup.
 
 ### ✅ TCP/IP Communication (Final Approach)
 - Implemented direct control using TCP/IP sockets.
