@@ -11,7 +11,7 @@ The first stage of the project involved controlling the ABB IRB 1200 in a simula
 - Used inverse kinematics to validate robot behavior.
 ### INSTRUCTIONS
 
-For running RViz, make the work area ready as abb_ros2:
+For running RViz, make you're first following [BUILDING THE PACKAGE IN ROS2 GUIDE]([https://github.com/PickNikRobotics/abb_ros2](https://github.com/ofirdva/abb_ros2/blob/rolling/docs/README.md))
 Create a ROS 2 workspace per the online tutorial. Clone this package into your workspace.
 
 ### Import package dependencies:
@@ -22,6 +22,7 @@ rosdep update
 cd src
 vcs import < abb_ros2/abb.repos
 rosdep install -r --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y
+```
 
 ---
 
