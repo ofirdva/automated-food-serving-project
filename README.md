@@ -12,17 +12,13 @@ The first stage of the project involved controlling the ABB IRB 1200 in a simula
 ### INSTRUCTIONS
 
 For running RViz, make sure you're first following [BUILDING THE PACKAGE IN ROS2 GUIDE](https://github.com/ofirdva/abb_ros2/blob/rolling/docs/README.md)
-Create a ROS 2 workspace per the online tutorial. Clone this package into your workspace.
-
-### Import package dependencies:
+After Rviz is launched, run the following nodes for controlling the simulation with the joystick.
 ```bash
-sudo apt update
-sudo apt dist-upgrade
-rosdep update
-cd src
-vcs import < abb_ros2/abb.repos
-rosdep install -r --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y
+ros2 run joy
+ros2 run joy_rely
+ros2 run joy_to_joint_positions
 ```
+
 
 ---
 
