@@ -3,6 +3,7 @@
 This project focuses on developing and deploying an automated robotic food-serving system using the **ABB IRB 1200** robotic arm. The work progressed from simulation and motion planning to real-time control of the physical robot using multiple communication protocols.
 
 ---
+## requirements
 
 ## 🔧 Phase 1: RViz Simulation with ROS 2
 
