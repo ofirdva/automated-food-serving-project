@@ -1,3 +1,6 @@
+# Created by Ofir Dvantman
+# Function: Sending joint position to the robot using udp streaming
+
 import socket
 import struct
 import time
@@ -30,3 +33,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
