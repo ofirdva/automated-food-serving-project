@@ -44,6 +44,15 @@ After simulation, the next step was to control the actual robot. This required i
 
 > 🔗 **TCP/IP Control Code adapted from:**  
 > [`robotics/open_abb`]([https://github.com/milistu/open_abb]) – A Python interface for ABB robots over sockets.
+### INSTRUCTIONS
+
+For sending commands via TCP/IP, make sure you're first following [Robot Setup](https://github.com/ofirdva/automated-food-serving-project/blob/main/open_abb_sim/README.md)
+```bash
+python3
+Import abb
+R= abb.Robot(ip=’192.168.125.1’)
+R.<name of function>
+```
 
 ---
 
