@@ -1,4 +1,4 @@
-# 🤖 ABB IRB 1200 Robotic Arm – Final Project (Simulation of Real Robot Control)
+# 🤖 ABB IRB 1200 Robotic Arm – Final Project (Simulation & Real Robot Control)
 
 This project focuses on developing and deploying an automated robotic food-serving system using the **ABB IRB 1200** robotic arm. The work progressed from simulation and motion planning to real-time control of the physical robot using multiple communication protocols.
 
