@@ -31,6 +31,8 @@ ros2 run <name_of_folder> joy_to_joint_positions
 
 After simulation, the next step was to control the actual robot. This required investigating multiple protocols to find the most suitable method for reliable operation.
 
+![Joystick Demo](media/real-control.gif)
+
 ### ✅ Robot Web Services (RWS) via ROS 2
 - Used [PickNik’s `abb_ros2` package](https://github.com/PickNikRobotics/abb_ros2) to send RWS commands from Python.
 - Successfully controlled motors, operation mode, and robot state monitoring.
