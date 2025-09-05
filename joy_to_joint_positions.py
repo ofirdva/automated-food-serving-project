@@ -1,3 +1,7 @@
+# Created by Ofir Dvantman
+# This script connects to abb_ros2_sim interfaces to control ABB IRB 1200
+# Function: Converts joystick input to joint positions 
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Joy, JointState
@@ -64,3 +68,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
