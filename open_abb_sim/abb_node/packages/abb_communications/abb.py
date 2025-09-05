@@ -1,13 +1,14 @@
-"""
-Michael Dawson-Haggerty
 
-abb.py: contains classes and support functions which interact with an ABB Robot running our software stack (RAPID code module SERVER)
-
-
-For functions which require targets (XYZ positions with quaternion orientation),
-targets can be passed as [[XYZ], [Quats]] OR [XYZ, Quats]
-
-"""
+# Modified by Ofir Dvantman – June 2025
+# Based on the original abb.py from https://github.com/milistu/open_abb/tree/fuerte-devel
+# Part of my final project: Automated Food Serving with ABB IRB 1200 (simulation)
+#
+# Key changes:
+# - Added `execute_predefined_route_repeatedly` for box-filling sequence
+# - Added `move_in_circle` for circular stirring inside pot
+# - Added `rotate_quaternion` for orientation correction
+# - Introduced `predefined_route` with food-serving coordinates
+# - Updated `__main__` to run full simulation behavior
 
 import socket
 import json
@@ -16,19 +17,26 @@ import inspect
 from threading import Thread
 from collections import deque
 import logging
+import math
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
-
 class Robot:
+    predefined_route = [
+        [[-153.24, -446.46, 600], [0.086, -0.8, -0.56, -0.13]],
+        [[-153.24, -446.46, 360], [0.086, -0.8, -0.56, -0.13]],
+        [[-153.24, -371.71, 346.55], [0.086, 0.81, 0.56, -0.11]],
+        [[-153.24, -300.71, 346.55], [0.127,0.8, 0.55, -0.2]],
+        [[-153.24, -300.71, 450.6], [0.127,0.8, 0.55, -0.2]],
+        [[-104.72, -347.71, 471.6], [0.232,0.698, 0.57, -0.36]],
+        [[180,-583, 285.3], [0.296, 0.686, 0.59, -0.3]],
+        [[180, -583, 285.3], [0.157, 0.267,-0.866,0.39]]
+    ]
+
     def __init__(self, ip="192.168.125.1", port_motion=5000, port_logger=5001):
         self.delay = 0.08
-
         self.connect_motion((ip, port_motion))
-        # log_thread = Thread(target = self.get_net,
-        #                    args   = ((ip, port_logger))).start()
-
         self.ip = ip
         self.port_motion = port_motion
         self.set_units("millimeters", "degrees")
@@ -48,7 +56,6 @@ class Robot:
     def connect_logger(self, remote, maxlen=None):
         self.pose = deque(maxlen=maxlen)
         self.joints = deque(maxlen=maxlen)
-
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(remote)
         s.setblocking(1)
@@ -57,7 +64,6 @@ class Robot:
                 data = map(float, s.recv(4096).split())
                 if int(data[1]) == 0:
                     self.pose.append([data[2:5], data[5:]])
-                # elif int(data[1]) == 1: self.joints.append([a[2:5], a[5:]])
         finally:
             s.shutdown(socket.SHUT_RDWR)
 
@@ -68,18 +74,10 @@ class Robot:
         self.scale_angle = units_a[angular]
 
     def set_cartesian(self, pose):
-        """
-        Executes a move immediately from the current pose,
-        to 'pose', with units of millimeters.
-        """
         msg = "01 " + self.format_pose(pose)
         return self.send(msg)
 
     def set_joints(self, joints):
-        """
-        Executes a move immediately, from current joint angles,
-        to 'joints', in degrees.
-        """
         if len(joints) != 6:
             return False
         msg = "02 "
@@ -89,80 +87,31 @@ class Robot:
         return self.send(msg)
 
     def get_cartesian(self):
-        """
-        Returns the current pose of the robot, in millimeters
-        """
         msg = "03 #"
         data = self.send(msg).split()
         r = [float(s) for s in data]
         return [r[2:5], r[5:9]]
 
     def get_joints(self):
-        """
-        Returns the current angles of the robots joints, in degrees.
-        """
         msg = "04 #"
         data = self.send(msg).split()
         return [float(s) / self.scale_angle for s in data[2:8]]
 
-    def get_external_axis(self):
-        """
-        If you have an external axis connected to your robot controller
-        (such as a FlexLifter 600, google it), this returns the joint angles
-        """
-        msg = "05 #"
-        data = self.send(msg).split()
-        return [float(s) for s in data[2:8]]
-
     def get_robotinfo(self):
-        """
-        Returns a robot- unique string, with things such as the
-        robot's model number.
-        Example output from and IRB 2400:
-        ['24-53243', 'ROBOTWARE_5.12.1021.01', '2400/16 Type B']
-        """
         msg = "98 #"
         data = str(self.send(msg))[5:].split("*")
-        log.debug("get_robotinfo result: %s", str(data))
         return data
 
     def set_tool(self, tool=[[0, 0, 0], [1, 0, 0, 0]]):
-        """
-        Sets the tool centerpoint (TCP) of the robot.
-        When you command a cartesian move,
-        it aligns the TCP frame with the requested frame.
-
-        Offsets are from tool0, which is defined at the intersection of the
-        tool flange center axis and the flange face.
-        """
         msg = "06 " + self.format_pose(tool)
         self.send(msg)
         self.tool = tool
 
-    def load_json_tool(self, file_obj):
-        if file_obj.__class__.__name__ == "str":
-            file_obj = open(file_obj, "rb")
-        tool = check_coordinates(json.load(file_obj))
-        self.set_tool(tool)
-
-    def get_tool(self):
-        log.debug("get_tool returning: %s", str(self.tool))
-        return self.tool
-
     def set_workobject(self, work_obj=[[0, 0, 0], [1, 0, 0, 0]]):
-        """
-        The workobject is a local coordinate frame you can define on the robot,
-        then subsequent cartesian moves will be in this coordinate frame.
-        """
         msg = "07 " + self.format_pose(work_obj)
         self.send(msg)
 
     def set_speed(self, speed=[100, 50, 50, 50]):
-        """
-        speed: [robot TCP linear speed (mm/s), TCP orientation speed (deg/s),
-                external axis linear, external axis orientation]
-        """
-
         if len(speed) != 4:
             return False
         msg = "08 "
@@ -172,7 +121,7 @@ class Robot:
         msg += format(speed[3], "+08.2f") + " #"
         self.send(msg)
 
-    def set_zone(self, zone_key="z1", point_motion=False, manual_zone=[]):
+    def set_zone(self, zone_key="z0", point_motion=False, manual_zone=[]):
         zone_dict = {
             "z0": [0.3, 0.3, 0.03],
             "z1": [1, 1, 0.1],
@@ -185,24 +134,6 @@ class Robot:
             "z100": [100, 150, 15],
             "z200": [200, 300, 30],
         }
-        """
-        Sets the motion zone of the robot. This can also be thought of as
-        the flyby zone, AKA if the robot is going from point A -> B -> C,
-        how close do we have to pass by B to get to C
-        
-        zone_key: uses values from RAPID handbook (stored here in zone_dict)
-        with keys 'z*', you should probably use these
-
-        point_motion: go to point exactly, and stop briefly before moving on
-
-        manual_zone = [pzone_tcp, pzone_ori, zone_ori]
-        pzone_tcp: mm, radius from goal where robot tool centerpoint 
-                   is not rigidly constrained
-        pzone_ori: mm, radius from goal where robot tool orientation 
-                   is not rigidly constrained
-        zone_ori: degrees, zone size for the tool reorientation
-        """
-
         if point_motion:
             zone = [0, 0, 0]
         elif len(manual_zone) == 3:
@@ -211,7 +142,6 @@ class Robot:
             zone = zone_dict[zone_key]
         else:
             return False
-
         msg = "09 "
         msg += str(int(point_motion)) + " "
         msg += format(zone[0], "+08.4f") + " "
@@ -220,89 +150,28 @@ class Robot:
         self.send(msg)
 
     def buffer_add(self, pose):
-        """
-        Appends single pose to the remote buffer
-        Move will execute at current speed (which you can change between buffer_add calls)
-        """
         msg = "30 " + self.format_pose(pose)
         self.send(msg)
 
-    def buffer_set(self, pose_list):
-        """
-        Adds every pose in pose_list to the remote buffer
-        """
-        self.clear_buffer()
-        for pose in pose_list:
-            self.buffer_add(pose)
-        if self.buffer_len() == len(pose_list):
-            log.debug("Successfully added %i poses to remote buffer", len(pose_list))
-            return True
-        else:
-            log.warn("Failed to add poses to remote buffer!")
-            self.clear_buffer()
-            return False
-
     def clear_buffer(self):
         msg = "31 #"
-        data = self.send(msg)
-        if self.buffer_len() != 0:
-            log.warn("clear_buffer failed! buffer_len: %i", self.buffer_len())
-            raise NameError("clear_buffer failed!")
-        return data
+        return self.send(msg)
 
     def buffer_len(self):
-        """
-        Returns the length (number of poses stored) of the remote buffer
-        """
         msg = "32 #"
         data = self.send(msg).split()
         return int(float(data[2]))
 
+    def buffer_set(self, pose_list):
+        self.clear_buffer()
+        for pose in pose_list:
+            self.buffer_add(pose)
+
     def buffer_execute(self):
-        """
-        Immediately execute linear moves to every pose in the remote buffer.
-        """
         msg = "33 #"
         return self.send(msg)
 
-    def set_external_axis(self, axis_unscaled=[-550, 0, 0, 0, 0, 0]):
-        if len(axis_unscaled) != 6:
-            return False
-        msg = "34 "
-        for axis in axis_unscaled:
-            msg += format(axis, "+08.2f") + " "
-        msg += "#"
-        return self.send(msg)
-
-    def move_circular(self, pose_onarc, pose_end):
-        """
-        Executes a movement in a circular path from current position,
-        through pose_onarc, to pose_end
-        """
-        msg_0 = "35 " + self.format_pose(pose_onarc)
-        msg_1 = "36 " + self.format_pose(pose_end)
-
-        data = self.send(msg_0).split()
-        if data[1] != "1":
-            log.warn("move_circular incorrect response, bailing!")
-            return False
-        return self.send(msg_1)
-
-    def set_dio(self, value, id=0):
-        """
-        A function to set a physical DIO line on the robot.
-        For this to work you're going to need to edit the RAPID function
-        and fill in the DIO you want this to switch.
-        """
-        msg = "97 " + str(int(bool(value))) + " #"
-        return
-        # return self.send(msg)
-
     def send(self, message, wait_for_response=True):
-        """
-        Send a formatted message to the robot socket.
-        if wait_for_response, we wait for the response and return it
-        """
         caller = inspect.stack()[1][3]
         log.debug("%-14s sending: %s", caller, message)
         self.sock.sendto(message.encode(), (self.ip, self.port_motion))
@@ -310,7 +179,7 @@ class Robot:
         if not wait_for_response:
             return
         data = self.sock.recv(4096)
-        log.debug("%-14s recieved: %s", caller, data)
+        log.debug("%-14s received: %s", caller, data)
         return data
 
     def format_pose(self, pose):
@@ -323,18 +192,22 @@ class Robot:
         msg += "#"
         return msg
 
-    def close(self):
-        self.send("99 #", False)
-        self.sock.shutdown(socket.SHUT_RDWR)
-        self.sock.close()
-        log.info("Disconnected from ABB robot.")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.close()
-
+    def rotate_quaternion(self, quaternion, angle):
+        angle = -angle
+        rotation = [
+            math.cos(angle / 2),
+            0,
+            0,
+            math.sin(angle / 2)
+        ]
+        w1, x1, y1, z1 = quaternion
+        w2, x2, y2, z2 = rotation
+        return [
+            w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
+            w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
+            w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+            w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
+        ]
 
 def check_coordinates(coordinates):
     if (
@@ -345,18 +218,20 @@ def check_coordinates(coordinates):
         return coordinates
     elif len(coordinates) == 7:
         return [coordinates[0:3], coordinates[3:7]]
-    log.warn("Recieved malformed coordinate: %s", str(coordinates))
     raise NameError("Malformed coordinate!")
 
-
 if __name__ == "__main__":
-    formatter = logging.Formatter(
-        "[%(asctime)s] %(levelname)-7s (%(filename)s:%(lineno)3s) %(message)s",
-        "%Y-%m-%d %H:%M:%S",
-    )
+    formatter = logging.Formatter("[%(asctime)s] %(levelname)-7s (%(filename)s:%(lineno)3s) %(message)s", "%Y-%m-%d %H:%M:%S")
     handler_stream = logging.StreamHandler()
     handler_stream.setFormatter(formatter)
     handler_stream.setLevel(logging.DEBUG)
     log = logging.getLogger("abb")
     log.setLevel(logging.DEBUG)
     log.addHandler(handler_stream)
+
+    robot = Robot(ip="192.168.125.1", port_motion=5000)
+    try:
+        robot.execute_predefined_route_repeatedly(box_count=3)
+        robot.move_in_circle()
+    finally:
+        robot.close()
