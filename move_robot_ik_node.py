@@ -1,3 +1,7 @@
+# Created by Ofir Dvantman
+# This script connects to abb_ros2_sim interfaces to control ABB IRB 1200
+# Function: Using DH parameters for moving the simulated robot into the desired target position
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
@@ -134,3 +138,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
