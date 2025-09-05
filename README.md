@@ -9,9 +9,11 @@ This project focuses on developing and deploying an automated robotic food-servi
 
 The first stage of the project involved controlling the ABB IRB 1200 in a simulated environment using **RViz** and **ROS 2**. Key features:
 - Used [PickNik’s `abb_ros2` package](https://github.com/PickNikRobotics/abb_ros2) to implement joystick-based motion control in RViz .
-<img src="joystick-ezgif.com-crop.gif" alt="Joystick Demo" width="400"/>
-
+![Joystick Demo](media/joystick-ezgif.com-crop.gif)
 - Used inverse kinematics to validate robot behavior.
+![Joystick Demo](media/inversekinemtics-ezgif.com-video-to-gif-converter.gif)
+
+  
 ### INSTRUCTIONS
 
 For running RViz, make sure you're first following [BUILDING THE PACKAGE IN ROS2 GUIDE](https://github.com/ofirdva/abb_ros2/blob/rolling/docs/README.md)
